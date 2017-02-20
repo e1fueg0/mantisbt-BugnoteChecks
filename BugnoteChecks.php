@@ -41,18 +41,18 @@ class BugnoteChecksPlugin extends MantisPlugin {
 		);
 	}
 
-/*
 	function schema() {
 		return array(
 			array( 'CreateTableSQL', array(plugin_table('checks'), "
 				id			I		NOTNULL UNSIGNED AUTOINCREMENT PRIMARY,
-				bug_id		I		NOTNULL PRIMARY',
-				bugnote_id	I		NOTNULL PRIMARY,
-				turned		L		DEFAULT \" false \",
-				checked		L		DEFAULT \" false \""))
+				bug_id		I		NOTNULL,
+				bugnote_id	I		NOTNULL,
+				checked		L		DEFAULT \" false \",
+				by_user_id	I
+				",
+			array()))
 		);
 	}
-*/
 
 	function resources($p_event) {
 		$resources = '<link rel="stylesheet" type="text/css" href="' . plugin_file('main.css') . '" />';
@@ -73,31 +73,106 @@ class BugnoteChecksPlugin extends MantisPlugin {
 		echo '<tr class="spacer"><td colspan="2"></td></tr>';
 	}
 
+	function get_checks_for_bug($bug_id) {
+		$t_result = db_query("SELECT count(*) FROM " . plugin_table('checks') . " WHERE bug_id = $bug_id");
+		return db_result($t_result, 0);
+	}
+
+	function get_checked_checks_for_bug($bug_id) {
+		$t_result = db_query("SELECT count(*) FROM " . plugin_table('checks') . " WHERE bug_id = $bug_id AND checked = true");
+		return db_result($t_result, 0);
+	}
+
 	function display_progress($p_event, $bug_id) {
-		$progress = 75;
+		$total = $this->get_checks_for_bug($bug_id);
+		if (!$total)
+			return;
+		$progress = ceil($this->get_checked_checks_for_bug($bug_id) / $total);
 		echo "<div class='bugnotechecks_inner_bar' style='width: $progress%;'/></div>";
 	}
 
+	function get_check_row($bugnote_id) {
+		$t_result = db_query("SELECT * FROM " . plugin_table('checks') . " WHERE bugnote_id = $bugnote_id");
+		return db_fetch_array($t_result);
+	}
+
+	function create_check($bugnote_id) {
+		$bug_id = bugnote_get_field($bugnote_id, 'bug_id');
+		if (empty($bug_id))
+			return;
+		db_query("INSERT INTO " . plugin_table('checks') . " (bug_id, bugnote_id) VALUES ($bug_id, $bugnote_id)");
+	}
+
+	function drop_check($bugnote_id) {
+		db_query("DELETE FROM " . plugin_table('checks') . " WHERE bugnote_id = $bugnote_id");
+	}
+
 	function note_view($p_event, $bug_id, $bugnote_id, $is_private) {
-		echo "<td/><td>";
-		echo "<div class='bugnotechecks_div_check'>";
-		$this->display_click($bugnote_id, !$is_private);
+		$turn_state = false;
+		$row = $this->get_check_row($bugnote_id);
+		if ($row) {
+			$turn_state = true;
+		}
+
+		echo "<td/>";
+		echo "<div class='bugnotechecks_div_turn'>";
+		$this->display_turn($bugnote_id, $turn_state);
+		echo "</div>";
+		echo "<td>";
+		echo "<div class='bugnotechecks_div_check' id='bugnotechecks_div_check.$bugnote_id'>";
+		if ($turn_state) {
+			$this->display_check($bugnote_id, $row['checked']);
+		}
 		echo "</div>";
 		echo "</td>";
 	}
 
-	function display_click($bugnote_id, $state) {
+	function display_turn($bugnote_id, $state) {
+		echo "<div class='bugnotechecks_internal_turn'>";
 		$state = !!$state;
 		$future_state = !$state;
-		echo "<img src='" . plugin_file(($state ? 'un' : "") . 'checked.png') . "'/>";
+		echo "<img src='" . plugin_file(($state ? 'on' : 'off') . '.png') . "' class='bugnotechecks_turn_icon'/>";
 		echo "<input type='hidden' name='id' value='$bugnote_id'/>";
 		echo "<input type='hidden' name='state' value='$future_state'/>";
+		echo "</div>";
+	}
+
+	function display_check($bugnote_id, $state = null) {
+		echo "<div class='bugnotechecks_internal_check'>";
+		if (empty($state)) {
+			$row = $this->get_check_row($bugnote_id);
+			if (!$row) {
+				return;
+			}
+			$state = $row['checked'];
+		}
+		$state = !!$state;
+		$future_state = !$state;
+		echo "<img src='" . plugin_file((!$state ? 'un' : '') . 'checked.png') . "'/>";
+		echo "<input type='hidden' name='id' value='$bugnote_id'/>";
+		echo "<input type='hidden' name='state' value='$future_state'/>";
+		echo "</div>";
 	}
 
 	function click_turn($p_event, $bugnote_id) {
+		$row = $this->get_check_row($bugnote_id);
+		if (!$row) {
+			$this->create_check($bugnote_id);
+		} else {
+			$this->drop_check($bugnote_id);
+		}
+		$row = $this->get_check_row($bugnote_id);
+		$turn_state = !!$row;
+		$this->display_turn($bugnote_id, $turn_state);
+		$this->display_check($bugnote_id);
+		$this->display_progress($p_event, $row['bug_id']);
 	}
 
 	function click_check($p_event, $bugnote_id, $state) {
-		return $this->display_click($bugnote_id, $state);
+		$row = $this->get_check_row($bugnote_id);
+		if (!$row)
+			return;
+		$this->display_check($bugnote_id);
+		$this->display_progress($p_event, $row['bug_id']);
 	}
 }
