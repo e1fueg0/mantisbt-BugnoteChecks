@@ -1,0 +1,28 @@
+.bugnotechecks_progress_text {
+	margin-top: 13px;
+	text-align: right;
+	font-weight: bold;
+	color: #337ab7;
+}
+
+.bugnotechecks_progress_div {
+	padding: 1em .25em;
+}
+
+.bugnotechecks_progress_bar {
+	background-color: #ccccbb;
+	border-radius: 3px;
+}
+
+.bugnotechecks_inner_bar {
+	height: 1.5em;
+	background-color: #337ab7;
+	border-radius: 3px;
+}
+
+.bugnotechecks_icon {
+	width: 3em;
+	height: 3em;
+	float: right;
+	margin-top: 3px;
+}
