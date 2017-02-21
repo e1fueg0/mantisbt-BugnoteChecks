@@ -8,11 +8,11 @@ function update_progress(_response) {
 		$('#bugnotechecks_progress_bar').html(_pr[0]);
 }
 
-function update_turn(_response) {
+function get_turn(_response) {
 	return _response.find('.bugnotechecks_internal_turn');
 }
 
-function find_check(_response) {
+function get_check(_response) {
 	return _response.find('.bugnotechecks_internal_check');
 }
 
