@@ -1,2 +1,2 @@
 <?php
-echo event_signal('EVENT_BUGNOTECHECKS_CLICK_CHECK', $_POST["id"], $_POST["state"]);
+echo event_signal('EVENT_BUGNOTECHECKS_CLICK_CHECK', array($_POST["id"], $_POST["bug_id"], $_POST["state"]));
