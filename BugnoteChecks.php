@@ -122,9 +122,9 @@ class BugnoteChecksPlugin extends MantisPlugin {
 		$this->display_turn($bugnote_id, $bug_id, $turn_state);
 		echo "</div>";
 		echo "<td>";
-		echo "<div class='bugnotechecks_div_check' id='bugnotechecks_div_check.$bugnote_id'>";
+		echo "<div class='bugnotechecks_div_check' id='bugnotechecks_div_check_$bugnote_id'>";
 		if ($turn_state) {
-			$this->display_check($bugnote_id, $bug_id, $row['checked']);
+			$this->display_check($bugnote_id, $bug_id, $row['checked'], $row['by_user_id']);
 		}
 		echo "</div>";
 		echo "</td>";
@@ -141,18 +141,12 @@ class BugnoteChecksPlugin extends MantisPlugin {
 		echo "</div>";
 	}
 
-	function display_check($bugnote_id, $bug_id, $state = null) {
-		if (empty($state)) {
-			$row = $this->get_check_row($bugnote_id);
-			if (!$row) {
-				return;
-			}
-			$state = $row['checked'];
-		}
-		$state = !!$state;
+	function display_check($bugnote_id, $bug_id, $state, $by_user_id) {
 		$future_state = !$state;
 		echo "<div class='bugnotechecks_internal_check'>";
 		echo "<img src='" . plugin_file((!$state ? 'un' : '') . 'checked.png') . "'/>";
+		if ($state)
+			echo " by " . prepare_user_name($by_user_id);
 		echo "<input type='hidden' name='id' value='$bugnote_id'/>";
 		echo "<input type='hidden' name='bug_id' value='$bug_id'/>";
 		echo "<input type='hidden' name='state' value='$future_state'/>";
@@ -169,12 +163,25 @@ class BugnoteChecksPlugin extends MantisPlugin {
 		$row = $this->get_check_row($bugnote_id);
 		$turn_state = !!$row;
 		$this->display_turn($bugnote_id, $bug_id, $turn_state);
-		$this->display_check($bugnote_id, $bug_id);
+		if ($turn_state)
+			$this->display_check($bugnote_id, $bug_id, false, null);
 		$this->display_progress($p_event, $bug_id);
 	}
 
-	function click_check($p_event, $bugnote_id, $bug_id, $state) {
-		$this->display_check($bugnote_id, $bug_id);
+	function click_check($p_event, $bugnote_id, $bug_id) {
+		$row = $this->get_check_row($bugnote_id);
+		if (!$row) {
+			return;
+		}
+		$state = $row['checked'];
+		$state = !!$state;
+		if (!$state) {
+			db_query("UPDATE " . plugin_table('checks') . " SET checked = true, by_user_id = " . auth_get_current_user_id()
+				. " WHERE bugnote_id = $bugnote_id");
+		} else {
+			db_query("UPDATE " . plugin_table('checks') . " SET checked = false, by_user_id = null WHERE bugnote_id = $bugnote_id");
+		}
+		$this->display_check($bugnote_id, $bug_id, !$state, auth_get_current_user_id());
 		$this->display_progress($p_event, $bug_id);
 	}
 }

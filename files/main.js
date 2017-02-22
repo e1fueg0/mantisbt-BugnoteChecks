@@ -25,7 +25,6 @@ $(document).ready(function() {
 			var state1 = $(this).find("input[name='state']")[0].value;
 			var url1 = $("#bugnotechecks_url_check")[0].value;
 			$.post(url1, { id: id1, bug_id: bugid1, state: state1 }, function (data) {
-				alert('aaa: ' + data);
 				var r1 = response(data);
 				update_progress(r1);
 				_this.html(get_check(r1));
@@ -40,11 +39,10 @@ $(document).ready(function() {
 			var state1 = $(this).find("input[name='state']")[0].value;
 			var url1 = $("#bugnotechecks_url_turn")[0].value;
 			$.post(url1, { id: id1, bug_id: bugid1, state: state1 }, function (data) {
-				alert('bbb: ' + data);
 				var r1 = response(data);
 				update_progress(r1);
 				_this.html(get_turn(r1));
-				$("#bugnotechecks_div_check." + id1).html(get_check(r1));
+				$("#bugnotechecks_div_check_" + id1).html(get_check(r1));
 			});
 		});
 	});
