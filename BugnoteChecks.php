@@ -88,7 +88,7 @@ class BugnoteChecksPlugin extends MantisPlugin {
 			echo "<div class='bugnotechecks_progress_bar_mark'/>";
 			return;
 		}
-		$progress = ceil($this->get_checked_checks_for_bug($bug_id) / $total);
+		$progress = ceil($this->get_checked_checks_for_bug($bug_id) * 100 / $total);
 		echo "<div class='bugnotechecks_progress_bar bugnotechecks_progress_bar_mark'>";
 		echo "<div class='bugnotechecks_inner_bar' style='width: $progress%;'/></div>";
 		echo "</div>";
