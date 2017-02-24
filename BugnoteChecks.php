@@ -59,7 +59,16 @@ class BugnoteChecksPlugin extends MantisPlugin {
 		return  $resources;
 	}
 
+	function delete_unexistent_checks() {
+		db_query("DELETE FROM " . plugin_table('checks') . " WHERE bugnote_id not in (SELECT id FROM " . db_get_table( 'bugnote' ) . ")");
+	}
+
 	function progress_view($p_event, $bug_id) {
+		$this->delete_unexistent_checks();
+
+		if (!db_result(db_query("SELECT count(*) FROM " . db_get_table('bugnote') . " WHERE bug_id = $bug_id"), 0))
+			return;
+
 		echo "<input id='bugnotechecks_url_progress' type='hidden' name='url' value='" . plugin_page( 'progress' ) . "'/>";
 		echo "<input id='bugnotechecks_url_turn' type='hidden' name='url' value='" . plugin_page( 'turn' ) . "'/>";
 		echo "<input id='bugnotechecks_url_check' type='hidden' name='url' value='" . plugin_page( 'check' ) . "'/>";
